@@ -1,9 +1,19 @@
-import type { PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
+import type { ChartPoint, MarketOverview, PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
+import { findDirectoryItem } from "@/lib/stock-directory";
 import { fetchYahooStockHistory } from "@/lib/yahoo-finance";
 
 export async function analyzeStock(symbol: string): Promise<StockAnalysisResult> {
   const { bars, name, symbol: resolvedSymbol } = await fetchYahooStockHistory(symbol);
+  const directoryItem = findDirectoryItem(resolvedSymbol) ?? findDirectoryItem(symbol);
+  const market = inferMarket(resolvedSymbol);
+  const benchmarkSymbol = market === "TW" ? "^TWII" : "^GSPC";
+  const benchmarkName = market === "TW" ? "\u53f0\u7063\u52a0\u6b0a\u6307\u6578" : "S&P 500";
+  const benchmarkHistory = await fetchYahooStockHistory(benchmarkSymbol, "1y");
   const currentPrice = bars.at(-1)?.close ?? 0;
+
+  if (bars.length < 260) {
+    throw new Error("\u6b77\u53f2\u8cc7\u6599\u4e0d\u8db3\uff0c\u7121\u6cd5\u5b8c\u6210\u9031\u3001\u6708\u3001\u5e74\u5206\u6790\u3002");
+  }
 
   const weekAnalysis = buildPeriodAnalysis("\u9031\u7dda", bars.slice(-30), 5, 10);
   const monthAnalysis = buildPeriodAnalysis("\u6708\u7dda", bars.slice(-120), 20, 60);
@@ -16,10 +26,13 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
 
   const overallSignal = scoreToSignal(overallScore);
   const yearPositionLabel = buildYearPositionLabel(bars.slice(-260), currentPrice);
+  const benchmark = buildMarketOverview(benchmarkSymbol, benchmarkName, benchmarkHistory.bars);
 
   return {
     symbol: resolvedSymbol,
     name,
+    market,
+    sector: directoryItem?.sector ?? "\u5176\u4ed6",
     currentPrice: round(currentPrice),
     overallSignal,
     overallScore,
@@ -27,7 +40,9 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
     summary: buildSummary(name, periods, overallSignal),
     riskNotice:
       "\u672c\u7d50\u679c\u4f9d\u6b77\u53f2\u50f9\u683c\u8207\u6210\u4ea4\u91cf\u4f30\u7b97\uff0c\u50c5\u4f9b\u6280\u8853\u5206\u6790\u53c3\u8003\uff0c\u4e0d\u69cb\u6210\u6295\u8cc7\u5efa\u8b70\uff1b\u82e5\u9047\u5230\u8ca1\u5831\u3001\u653f\u7b56\u6216\u7a81\u767c\u4e8b\u4ef6\uff0c\u8a0a\u865f\u53ef\u80fd\u5feb\u901f\u5931\u6548\u3002",
-    periods
+    periods,
+    chartPoints: toChartPoints(bars.slice(-120)),
+    benchmark
   };
 }
 
@@ -63,6 +78,31 @@ function buildPeriodAnalysis(
   };
 }
 
+function buildMarketOverview(symbol: string, name: string, bars: PriceBar[]): MarketOverview {
+  const points = toChartPoints(bars.slice(-120));
+  const currentPrice = bars.at(-1)?.close ?? 0;
+  const basePrice = bars.at(Math.max(0, bars.length - 120))?.close ?? currentPrice;
+
+  return {
+    symbol,
+    name,
+    currentPrice: round(currentPrice),
+    changePercent: round(percentageChange(basePrice, currentPrice)),
+    points
+  };
+}
+
+function toChartPoints(bars: PriceBar[]): ChartPoint[] {
+  return bars.map((bar) => ({
+    timestamp: bar.timestamp,
+    value: round(bar.close)
+  }));
+}
+
+function inferMarket(symbol: string) {
+  return symbol.endsWith(".TW") ? "TW" : "US";
+}
+
 function movingAverage(values: number[], window: number) {
   const sample = values.slice(-window);
   return sample.reduce((sum, value) => sum + value, 0) / sample.length;
@@ -85,8 +125,7 @@ function volumeTrendScore(bars: PriceBar[]) {
   const recent = average(bars.slice(-5).map((bar) => bar.volume));
   const baseline = average(bars.slice(-20).map((bar) => bar.volume));
   if (baseline === 0) return 0;
-  const volumeRatio = recent / baseline;
-  return clamp((volumeRatio - 1) * 10, -8, 8);
+  return clamp((recent / baseline - 1) * 10, -8, 8);
 }
 
 function average(values: number[]) {
@@ -96,7 +135,6 @@ function average(values: number[]) {
 function buildYearPositionLabel(bars: PriceBar[], currentPrice: number) {
   const yearHigh = Math.max(...bars.map((bar) => bar.high));
   const yearLow = Math.min(...bars.map((bar) => bar.low));
-
   if (yearHigh === yearLow) return "\u5340\u9593\u8cc7\u6599\u4e0d\u8db3";
 
   const ratio = ((currentPrice - yearLow) / (yearHigh - yearLow)) * 100;
@@ -142,14 +180,8 @@ function buildPeriodReason(
       ? "\u6ce2\u52d5\u504f\u5927\uff0c\u8a0a\u865f\u53ef\u9760\u5ea6\u9700\u8981\u6298\u6263\u3002"
       : "\u6ce2\u52d5\u5c1a\u53ef\uff0c\u8a0a\u865f\u7a69\u5b9a\u5ea6\u76f8\u5c0d\u8f03\u597d\u3002";
 
-  if (signal === "buy") {
-    return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u6574\u9ad4\u504f\u5411\u5f37\u52e2\u5ef6\u7e8c\u3002${risk}`;
-  }
-
-  if (signal === "sell") {
-    return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u7d50\u69cb\u504f\u5f31\uff0c\u8f03\u9069\u5408\u4fdd\u5b88\u770b\u5f85\u3002${risk}`;
-  }
-
+  if (signal === "buy") return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u6574\u9ad4\u504f\u5411\u5f37\u52e2\u5ef6\u7e8c\u3002${risk}`;
+  if (signal === "sell") return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u7d50\u69cb\u504f\u5f31\uff0c\u8f03\u9069\u5408\u4fdd\u5b88\u770b\u5f85\u3002${risk}`;
   return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u76ee\u524d\u591a\u7a7a\u5c1a\u672a\u62c9\u958b\u5dee\u8ddd\u3002${risk}`;
 }
 

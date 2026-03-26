@@ -9,6 +9,11 @@ export interface PriceBar {
   volume: number;
 }
 
+export interface ChartPoint {
+  timestamp: number;
+  value: number;
+}
+
 export interface PeriodAnalysis {
   label: "\u9031\u7dda" | "\u6708\u7dda" | "\u5e74\u7dda";
   signal: Signal;
@@ -20,9 +25,29 @@ export interface PeriodAnalysis {
   reason: string;
 }
 
+export interface MarketOverview {
+  symbol: string;
+  name: string;
+  currentPrice: number;
+  changePercent: number;
+  points: ChartPoint[];
+}
+
+export interface StockSearchItem {
+  symbol: string;
+  code: string;
+  name: string;
+  market: "TW" | "US";
+  sector: string;
+  description: string;
+  source: "local" | "yahoo";
+}
+
 export interface StockAnalysisResult {
   symbol: string;
   name: string;
+  market: "TW" | "US";
+  sector: string;
   currentPrice: number;
   overallSignal: Signal;
   overallScore: number;
@@ -30,4 +55,6 @@ export interface StockAnalysisResult {
   summary: string;
   riskNotice: string;
   periods: PeriodAnalysis[];
+  chartPoints: ChartPoint[];
+  benchmark: MarketOverview;
 }

@@ -1,13 +1,9 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import type { StockAnalysisResult } from "@/lib/types";
-import {
-  normalizeStockQuery,
-  searchStocks,
-  stockDirectory,
-  type StockDirectoryItem
-} from "@/lib/stock-directory";
+import { LineChart } from "@/components/line-chart";
+import { normalizeStockQuery, searchStocks, sectorOptions, stockDirectory, type StockDirectoryItem } from "@/lib/stock-directory";
+import type { StockAnalysisResult, StockSearchItem } from "@/lib/types";
 
 const defaultQuery = "\u53f0\u7a4d\u96fb";
 const favoriteStorageKey = "stockanalysis:favorites";
@@ -17,14 +13,15 @@ const copy = {
   searchFailed: "\u67e5\u8a62\u5931\u6557",
   searchLabel: "\u641c\u5c0b\u80a1\u7968",
   searchSubtitle:
-    "\u652f\u63f4\u4e2d\u6587\u540d\u7a31\u3001\u80a1\u7968\u4ee3\u78bc\uff0c\u53f0\u80a1\u53ea\u6253\u6578\u5b57\u4e5f\u53ef\u4ee5\u3002",
+    "\u652f\u63f4\u4e2d\u6587\u540d\u7a31\u3001\u80a1\u7968\u4ee3\u78bc\uff0c\u672a\u6536\u9304\u7684\u80a1\u7968\u6703\u81ea\u52d5\u53bb Yahoo \u641c\u5c0b\u3002",
   searchBadge: "\u4e2d\u6587 / \u4ee3\u78bc / \u6578\u5b57",
   searchPlaceholder:
-    "\u4f8b\u5982 \u53f0\u7a4d\u96fb\u30012330\u30010050\u3001Apple\u3001\u8f1d\u9054",
+    "\u4f8b\u5982 \u53f0\u7a4d\u96fb\u30012330\u30011301\u3001Apple\u3001\u8f1d\u9054",
   analyzeLoading: "\u5206\u6790\u4e2d...",
   analyze: "\u958b\u59cb\u5206\u6790",
   searchHint:
-    "\u8f38\u5165\u300c\u53f0\u7a4d\u96fb\u300d\u6703\u81ea\u52d5\u5c0d\u61c9\u300c2330.TW\u300d\uff0c\u8f38\u5165\u300c2330\u300d\u4e5f\u6703\u76f4\u63a5\u8f49\u6210\u53f0\u80a1\u4ee3\u78bc\u3002",
+    "\u4f60\u53ef\u4ee5\u5148\u9078\u7522\u696d\u5206\u985e\uff0c\u518d\u641c\u5c0b\u80a1\u540d\u6216\u4ee3\u78bc\uff1b\u8f38\u5165 4-6 \u78bc\u6703\u81ea\u52d5\u8f49\u6210\u53f0\u80a1\u4ee3\u78bc\u3002",
+  sectorLabel: "\u5206\u985e",
   addFavorite: "\u52a0\u5165\u81ea\u9078",
   addedFavorite: "\u5df2\u52a0\u5165\u81ea\u9078",
   price: "\u73fe\u50f9",
@@ -38,21 +35,30 @@ const copy = {
   emptyResult:
     "\u8f38\u5165\u80a1\u7968\u540d\u7a31\u6216\u4ee3\u78bc\u5f8c\uff0c\u5c31\u80fd\u67e5\u770b\u9031\u7dda\u3001\u6708\u7dda\u3001\u5e74\u7dda\u5206\u6790\u8207\u8cb7\u8ce3\u5efa\u8b70\u3002",
   stockList: "\u80a1\u7968\u5217\u8868",
+  suggestions: "\u641c\u5c0b\u5efa\u8b70",
   clickable: "\u53ef\u76f4\u63a5\u9ede\u9078",
   favorites: "\u81ea\u9078\u80a1\u7968",
   countUnit: "\u6a94",
   remove: "\u79fb\u9664",
   emptyFavorites:
-    "\u5f9e\u5206\u6790\u7d50\u679c\u52a0\u5165\u81ea\u9078\u5f8c\uff0c\u6703\u986f\u793a\u5728\u9019\u88e1\u3002"
+    "\u5f9e\u5206\u6790\u7d50\u679c\u52a0\u5165\u81ea\u9078\u5f8c\uff0c\u6703\u986f\u793a\u5728\u9019\u88e1\u3002",
+  stockChartTitle: "\u500b\u80a1\u6280\u8853\u8d70\u52e2\u5716",
+  stockChartSubtitle: "\u8fd1 120 \u500b\u4ea4\u6613\u65e5\u6536\u76e4\u50f9",
+  marketChartTitle: "\u5927\u76e4\u8d70\u52e2\u5716",
+  marketChartSubtitle: "\u540c\u671f\u6bd4\u8f03\u5927\u76e4\u65b9\u5411",
+  yahooTag: "Yahoo"
 } as const;
 
 export function AnalysisDashboard() {
   const [query, setQuery] = useState(defaultQuery);
+  const [sector, setSector] = useState<(typeof sectorOptions)[number]>("\u5168\u90e8");
   const [activeSymbol, setActiveSymbol] = useState("2330.TW");
   const [loading, setLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<StockAnalysisResult | null>(null);
   const [favorites, setFavorites] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<StockSearchItem[]>([]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(favoriteStorageKey);
@@ -73,12 +79,75 @@ export function AnalysisDashboard() {
     window.localStorage.setItem(favoriteStorageKey, JSON.stringify(favorites));
   }, [favorites]);
 
-  const filteredStocks = useMemo(() => searchStocks(query), [query]);
-  const favoriteStocks = stockDirectory.filter((item) => favorites.includes(item.symbol));
+  useEffect(() => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setSearching(true);
+
+      try {
+        const response = await fetch(
+          `/api/search?q=${encodeURIComponent(query)}&sector=${encodeURIComponent(sector)}`,
+          {
+            signal: controller.signal
+          }
+        );
+        const payload = (await response.json()) as { items: StockSearchItem[] };
+        setSuggestions(payload.items ?? []);
+      } catch {
+        if (!controller.signal.aborted) {
+          setSuggestions(searchStocks(query, sector));
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setSearching(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      window.clearTimeout(timer);
+    };
+  }, [query, sector]);
+
+  const favoriteStocks = useMemo(() => {
+    const knownItems = [
+      ...stockDirectory,
+      ...suggestions,
+      ...(result
+        ? [
+            {
+              symbol: result.symbol,
+              code: result.symbol.replace(".TW", ""),
+              name: result.name,
+              market: result.market,
+              sector: result.sector,
+              description: result.summary,
+              source: "yahoo" as const
+            }
+          ]
+        : [])
+    ];
+
+    return favorites.map((symbol) => {
+      return (
+        knownItems.find((item) => item.symbol === symbol) ?? {
+          symbol,
+          code: symbol.replace(".TW", ""),
+          name: symbol,
+          market: symbol.endsWith(".TW") ? "TW" : "US",
+          sector: "\u5176\u4ed6",
+          description: symbol,
+          source: "yahoo" as const
+        }
+      );
+    });
+  }, [favorites, result, suggestions]);
+
+  const categoryStocks = useMemo(() => searchStocks("", sector), [sector]);
 
   async function runAnalysis(input: string) {
     const normalizedSymbol = normalizeStockQuery(input);
-
     if (!normalizedSymbol) {
       setError(copy.emptyQuery);
       return;
@@ -97,7 +166,7 @@ export function AnalysisDashboard() {
       }
 
       setResult(payload);
-      setQuery(findDisplayLabel(normalizedSymbol));
+      setQuery(findDisplayLabel(payload.symbol, payload.name));
     } catch (submitError) {
       setResult(null);
       setError(submitError instanceof Error ? submitError.message : copy.searchFailed);
@@ -111,7 +180,7 @@ export function AnalysisDashboard() {
     await runAnalysis(query);
   }
 
-  function handlePick(item: StockDirectoryItem) {
+  function handlePick(item: StockSearchItem) {
     setQuery(item.name);
     void runAnalysis(item.symbol);
   }
@@ -136,6 +205,23 @@ export function AnalysisDashboard() {
               </div>
               <span className="search-badge">{copy.searchBadge}</span>
             </div>
+
+            <div className="filter-row">
+              <span className="filter-label">{copy.sectorLabel}</span>
+              <div className="sector-chip-row">
+                {sectorOptions.map((item) => (
+                  <button
+                    className={`sector-chip ${sector === item ? "active" : ""}`}
+                    key={item}
+                    onClick={() => setSector(item)}
+                    type="button"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="search-row">
               <input
                 id="symbol"
@@ -160,6 +246,7 @@ export function AnalysisDashboard() {
                   <div>
                     <p className="summary-symbol">{result.symbol}</p>
                     <h2>{result.name}</h2>
+                    <p className="summary-sector">{result.sector}</p>
                   </div>
                   <div className="summary-actions">
                     <button
@@ -191,6 +278,20 @@ export function AnalysisDashboard() {
                 <p className="summary-text">{result.summary}</p>
                 <p className="risk-text">{result.riskNotice}</p>
               </article>
+
+              <div className="chart-grid">
+                <LineChart
+                  points={result.chartPoints}
+                  subtitle={copy.stockChartSubtitle}
+                  title={copy.stockChartTitle}
+                />
+                <LineChart
+                  points={result.benchmark.points}
+                  subtitle={`${copy.marketChartSubtitle} | ${result.benchmark.name} ${formatSigned(result.benchmark.changePercent)}%`}
+                  title={copy.marketChartTitle}
+                  tone="market"
+                />
+              </div>
 
               <div className="period-grid">
                 {result.periods.map((period) => (
@@ -235,11 +336,40 @@ export function AnalysisDashboard() {
         <aside className="sidebar">
           <section className="sidebar-card">
             <div className="sidebar-title-row">
-              <h3>{copy.stockList}</h3>
-              <span className="sidebar-note">{copy.clickable}</span>
+              <h3>{copy.suggestions}</h3>
+              <span className="sidebar-note">{searching ? "..." : copy.clickable}</span>
             </div>
             <div className="stock-list">
-              {filteredStocks.map((item) => (
+              {suggestions.map((item) => (
+                <button
+                  className={`stock-item ${activeSymbol === item.symbol ? "active" : ""}`}
+                  key={`${item.symbol}-${item.source}`}
+                  onClick={() => handlePick(item)}
+                  type="button"
+                >
+                  <div>
+                    <strong>
+                      {item.name} <span className="stock-code">{item.code}</span>
+                    </strong>
+                    <p>
+                      {item.sector} | {item.description}
+                    </p>
+                  </div>
+                  <span className="stock-market">
+                    {item.market} {item.source === "yahoo" ? copy.yahooTag : ""}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="sidebar-card">
+            <div className="sidebar-title-row">
+              <h3>{copy.stockList}</h3>
+              <span className="sidebar-note">{sector}</span>
+            </div>
+            <div className="stock-list">
+              {categoryStocks.map((item) => (
                 <button
                   className={`stock-item ${activeSymbol === item.symbol ? "active" : ""}`}
                   key={item.symbol}
@@ -252,7 +382,7 @@ export function AnalysisDashboard() {
                     </strong>
                     <p>{item.description}</p>
                   </div>
-                  <span className="stock-market">{item.market}</span>
+                  <span className="stock-market">{item.sector}</span>
                 </button>
               ))}
             </div>
@@ -292,9 +422,9 @@ export function AnalysisDashboard() {
   );
 }
 
-function findDisplayLabel(symbol: string) {
-  const match = stockDirectory.find((item) => item.symbol === symbol);
-  return match ? match.name : symbol;
+function findDisplayLabel(symbol: string, fallbackName: string) {
+  const localItem = stockDirectory.find((item) => item.symbol === symbol);
+  return localItem?.name ?? fallbackName ?? symbol;
 }
 
 function toSignalLabel(signal: StockAnalysisResult["overallSignal"]) {
@@ -307,4 +437,9 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("zh-TW", {
     maximumFractionDigits: 2
   }).format(value);
+}
+
+function formatSigned(value: number) {
+  const rounded = Math.round(value * 100) / 100;
+  return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }
