@@ -354,6 +354,27 @@ input {
   background: #f5f9ff;
 }
 
+.compact-card {
+  margin-top: 16px;
+  padding: 14px 16px;
+}
+
+.inline-signal {
+  font-weight: 700;
+}
+
+.signal-text-buy {
+  color: #16803c;
+}
+
+.signal-text-hold {
+  color: #8c6500;
+}
+
+.signal-text-sell {
+  color: var(--danger);
+}
+
 .data-source-text {
   margin: 14px 0 0;
   color: var(--muted);

@@ -32,6 +32,7 @@ const copy = {
   momentum: "\u52d5\u80fd",
   movingAverage: "\u5747\u7dda",
   volatility: "\u6ce2\u52d5",
+  aiDecision: "AI \u5224\u65b7",
   emptyResult:
     "\u8f38\u5165\u80a1\u7968\u540d\u7a31\u6216\u4ee3\u78bc\u5f8c\uff0c\u5c31\u80fd\u67e5\u770b\u9031\u7dda\u3001\u6708\u7dda\u3001\u5e74\u7dda\u5206\u6790\u8207\u8cb7\u8ce3\u5efa\u8b70\u3002",
   stockList: "\u80a1\u7968\u5217\u8868",
@@ -311,6 +312,15 @@ export function AnalysisDashboard() {
                       {copy.scorePrefix} {period.score}
                     </p>
                     <p>{period.reason}</p>
+                    <div className="news-card compact-card">
+                      <span className="metric-label">{copy.aiDecision}</span>
+                      <p className="summary-text">
+                        <strong className={`inline-signal signal-text-${period.aiSignal}`}>
+                          {toSignalLabel(period.aiSignal)}
+                        </strong>
+                        {" "}{period.aiReason}
+                      </p>
+                    </div>
                     <dl className="metric-grid">
                       <div>
                         <dt>{copy.trend}</dt>

@@ -8,6 +8,16 @@ interface GeminiResponse {
   }>;
 }
 
+interface GeminiPeriodDecision {
+  label?: string;
+  signal?: "buy" | "hold" | "sell";
+  reason?: string;
+}
+
+interface GeminiPeriodDecisionResponse {
+  periods?: GeminiPeriodDecision[];
+}
+
 export async function fetchGeminiNewsSummary(params: {
   symbol: string;
   name: string;
@@ -55,6 +65,60 @@ export async function fetchGeminiNewsSummary(params: {
   return tryGeminiRequest(apiKey, {
     contents: bodyWithSearch.contents
   });
+}
+
+export async function fetchGeminiPeriodDecisions(params: {
+  symbol: string;
+  name: string;
+  sector: string;
+  periods: Array<{
+    label: string;
+    score: number;
+    trend: string;
+    momentum: string;
+    movingAverage: string;
+    volatility: string;
+    reason: string;
+  }>;
+}) {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return null;
+  }
+
+  const prompt =
+    "\u8acb\u4f60\u64d4\u4efb\u53f0\u80a1\u6280\u8853\u5206\u6790\u52a9\u7406\uff0c\u4f7f\u7528\u7e41\u9ad4\u4e2d\u6587\u3002" +
+    `\u91dd\u5c0d ${params.name}(${params.symbol})\uff0c\u7522\u696d\u70ba ${params.sector}\uff0c` +
+    "\u8acb\u6839\u64da\u6211\u63d0\u4f9b\u7684\u9031\u7dda\u3001\u6708\u7dda\u3001\u5e74\u7dda\u6280\u8853\u8cc7\u8a0a\uff0c" +
+    "\u5206\u5225\u5224\u65b7\u6bcf\u500b\u9031\u671f\u8f03\u9069\u5408\u8cb7\u9032\u3001\u6301\u6709\u89c0\u5bdf\u3001\u6216\u8ce3\u51fa\u4fdd\u5b88\u3002" +
+    "\u8acb\u56de\u50b3 JSON\uff0c\u683c\u5f0f\u70ba " +
+    '{"periods":[{"label":"\\u9031\\u7dda","signal":"buy|hold|sell","reason":"\\u7c21\\u77ed\\u7406\\u7531"}]}' +
+    "\u3002\u4e0d\u8981\u56de\u50b3 Markdown\uff0c\u4e0d\u8981\u52a0\u5176\u4ed6\u8aaa\u660e\u3002" +
+    `\u8cc7\u6599\uff1a${JSON.stringify(params.periods)}`;
+
+  const text = await tryGeminiRequest(apiKey, {
+    contents: [
+      {
+        role: "user",
+        parts: [{ text: prompt }]
+      }
+    ],
+    generationConfig: {
+      responseMimeType: "application/json"
+    }
+  });
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    const parsed = JSON.parse(text) as GeminiPeriodDecisionResponse;
+    return parsed.periods ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function tryGeminiRequest(apiKey: string, body: object) {

@@ -23,6 +23,8 @@ export interface PeriodAnalysis {
   movingAverage: string;
   volatility: string;
   reason: string;
+  aiSignal: Signal;
+  aiReason: string;
 }
 
 export interface MarketOverview {

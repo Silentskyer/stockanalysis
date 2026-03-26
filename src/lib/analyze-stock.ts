@@ -1,6 +1,6 @@
 import { findDirectoryItem } from "@/lib/stock-directory";
 import { fetchFugleQuote, fetchFugleStockHistory } from "@/lib/fugle-marketdata";
-import { fetchGeminiNewsSummary } from "@/lib/gemini-news";
+import { fetchGeminiNewsSummary, fetchGeminiPeriodDecisions } from "@/lib/gemini-news";
 import type { MarketOverview, PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
 import {
   fetchYahooQuote,
@@ -40,6 +40,28 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
   const overallSignal = currentPrice == null && availableBars === 0 ? "hold" : scoreToSignal(overallScore);
   const yearPositionLabel = buildYearPositionLabel(bars, currentPrice);
   const benchmark = buildMarketOverview(benchmarkFugleQuote, benchmarkYahooQuote);
+  const periodDecisions = await fetchGeminiPeriodDecisions({
+    symbol: resolvedSymbol,
+    name,
+    sector: directoryItem?.sector ?? "\u5176\u4ed6",
+    periods: periods.map((period) => ({
+      label: period.label,
+      score: period.score,
+      trend: period.trend,
+      momentum: period.momentum,
+      movingAverage: period.movingAverage,
+      volatility: period.volatility,
+      reason: period.reason
+    }))
+  });
+  const enrichedPeriods = periods.map((period) => {
+    const aiDecision = periodDecisions?.find((item) => item.label === period.label);
+    return {
+      ...period,
+      aiSignal: aiDecision?.signal ?? period.signal,
+      aiReason: aiDecision?.reason?.trim() || buildDefaultAiReason(period)
+    };
+  });
   const newsSummary =
     (await fetchGeminiNewsSummary({
       symbol: resolvedSymbol,
@@ -48,8 +70,14 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
       currentPrice: currentPrice == null ? null : round(currentPrice),
       changePercent: quote?.changePercent == null ? null : round(quote.changePercent)
     })) ?? null;
-  const dataSources = buildDataSources(fugleHistory, fugleQuote, yahooHistory, yahooQuote, Boolean(newsSummary));
-  const summary = buildSummary(name, periods, overallSignal, availableBars, newsSummary, currentPrice == null);
+  const dataSources = buildDataSources(
+    fugleHistory,
+    fugleQuote,
+    yahooHistory,
+    yahooQuote,
+    Boolean(newsSummary || periodDecisions?.length)
+  );
+  const summary = buildSummary(name, enrichedPeriods, overallSignal, availableBars, newsSummary, currentPrice == null);
 
   return {
     symbol: resolvedSymbol,
@@ -64,7 +92,7 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
     summary,
     riskNotice:
       "\u672c\u7d50\u679c\u4f9d\u50f9\u683c\u3001\u6210\u4ea4\u91cf\u8207\u65b0\u805e\u6458\u8981\u505a\u8f14\u52a9\u5206\u6790\uff0c\u50c5\u4f9b\u53c3\u8003\uff0c\u4e0d\u69cb\u6210\u6295\u8cc7\u5efa\u8b70\u3002",
-    periods,
+    periods: enrichedPeriods,
     chartPoints: [],
     benchmark,
     newsSummary,
@@ -181,7 +209,9 @@ function buildAdaptivePeriodAnalysis(
       momentum: "\u8cc7\u6599\u4e0d\u8db3",
       movingAverage: "\u8cc7\u6599\u4e0d\u8db3",
       volatility: "\u8cc7\u6599\u4e0d\u8db3",
-      reason: `${label}\u6b77\u53f2\u8cc7\u6599\u4ecd\u504f\u5c11\uff0c\u5148\u63d0\u4f9b\u73fe\u50f9\u8207\u65b0\u805e\u8f14\u52a9\u89c0\u5bdf\u3002`
+      reason: `${label}\u6b77\u53f2\u8cc7\u6599\u4ecd\u504f\u5c11\uff0c\u5148\u63d0\u4f9b\u73fe\u50f9\u8207\u65b0\u805e\u8f14\u52a9\u89c0\u5bdf\u3002`,
+      aiSignal: "hold",
+      aiReason: "\u8cc7\u6599\u4ecd\u504f\u5c11\uff0c\u5efa\u8b70\u5148\u4ee5\u6301\u6709\u89c0\u5bdf\u70ba\u4e3b\u3002"
     };
   }
 
@@ -218,7 +248,9 @@ function buildPeriodAnalysis(
     momentum: describeMomentum(priceChange),
     movingAverage: describeMovingAverage(currentPrice, shortMa, longMa),
     volatility: describeVolatility(volatilityValue),
-    reason: buildPeriodReason(label, signal, score, priceChange, shortMa, longMa, volatilityValue)
+    reason: buildPeriodReason(label, signal, score, priceChange, shortMa, longMa, volatilityValue),
+    aiSignal: signal,
+    aiReason: ""
   };
 }
 
@@ -358,6 +390,18 @@ function buildPeriodReason(
   if (signal === "buy") return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u6574\u9ad4\u504f\u5411\u5f37\u52e2\u5ef6\u7e8c\u3002${risk}`;
   if (signal === "sell") return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u7d50\u69cb\u504f\u5f31\uff0c\u8f03\u9069\u5408\u4fdd\u5b88\u770b\u5f85\u3002${risk}`;
   return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u76ee\u524d\u591a\u7a7a\u5c1a\u672a\u62c9\u958b\u5dee\u8ddd\u3002${risk}`;
+}
+
+function buildDefaultAiReason(period: PeriodAnalysis) {
+  if (period.signal === "buy") {
+    return "\u8da8\u52e2\u8207\u5206\u6578\u76f8\u5c0d\u6b63\u5411\uff0c\u53ef\u8003\u616e\u5206\u6279\u8cb7\u9032\u3002";
+  }
+
+  if (period.signal === "sell") {
+    return "\u7d50\u69cb\u504f\u5f31\u4e14\u98a8\u96aa\u8f03\u9ad8\uff0c\u8f03\u9069\u5408\u4fdd\u5b88\u61c9\u5c0d\u3002";
+  }
+
+  return "\u8a0a\u865f\u5c1a\u672a\u4e00\u81f4\uff0c\u5efa\u8b70\u5148\u6301\u6709\u89c0\u5bdf\u7b49\u5f85\u78ba\u8a8d\u3002";
 }
 
 function describeTrend(priceChange: number, shortMa: number, longMa: number) {
