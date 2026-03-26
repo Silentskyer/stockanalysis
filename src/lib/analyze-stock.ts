@@ -5,16 +5,13 @@ import { fetchFugleQuote, fetchFugleStockHistory } from "@/lib/fugle-marketdata"
 export async function analyzeStock(symbol: string): Promise<StockAnalysisResult> {
   const { bars, name, symbol: resolvedSymbol } = await fetchFugleStockHistory(symbol);
   const directoryItem = findDirectoryItem(resolvedSymbol) ?? findDirectoryItem(symbol);
+  const quote = await fetchFugleQuote(symbol);
   const benchmarkQuote = await fetchFugleQuote("0050");
-  const currentPrice = bars.at(-1)?.close ?? 0;
-
-  if (bars.length < 120) {
-    throw new Error("\u6b77\u53f2\u8cc7\u6599\u4e0d\u8db3\uff0c\u7121\u6cd5\u5b8c\u6210\u9031\u3001\u6708\u3001\u5e74\u5206\u6790\u3002");
-  }
-
-  const weekAnalysis = buildPeriodAnalysis("\u9031\u7dda", bars.slice(-30), 5, 10);
-  const monthAnalysis = buildPeriodAnalysis("\u6708\u7dda", bars.slice(-120), 20, 60);
-  const yearAnalysis = buildPeriodAnalysis("\u5e74\u7dda", bars, 60, 120);
+  const currentPrice = quote.lastPrice ?? quote.closePrice ?? bars.at(-1)?.close ?? 0;
+  const availableBars = bars.length;
+  const weekAnalysis = buildAdaptivePeriodAnalysis("\u9031\u7dda", bars, 30, 5, 10);
+  const monthAnalysis = buildAdaptivePeriodAnalysis("\u6708\u7dda", bars, 90, 20, 60);
+  const yearAnalysis = buildAdaptivePeriodAnalysis("\u5e74\u7dda", bars, 180, 60, 120);
   const periods = [weekAnalysis, monthAnalysis, yearAnalysis];
 
   const overallScore = Math.round(
@@ -31,16 +28,45 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
     market: "TW",
     sector: directoryItem?.sector ?? "\u5176\u4ed6",
     currentPrice: round(currentPrice),
+    changePercent: round(quote.changePercent ?? 0),
     overallSignal,
     overallScore,
     yearPositionLabel,
-    summary: buildSummary(name, periods, overallSignal),
+    summary: buildSummary(name, periods, overallSignal, availableBars),
     riskNotice:
       "\u672c\u7d50\u679c\u4f9d\u6b77\u53f2\u50f9\u683c\u8207\u6210\u4ea4\u91cf\u4f30\u7b97\uff0c\u50c5\u4f9b\u6280\u8853\u5206\u6790\u53c3\u8003\uff0c\u4e0d\u69cb\u6210\u6295\u8cc7\u5efa\u8b70\uff1b\u82e5\u9047\u5230\u8ca1\u5831\u3001\u653f\u7b56\u6216\u7a81\u767c\u4e8b\u4ef6\uff0c\u8a0a\u865f\u53ef\u80fd\u5feb\u901f\u5931\u6548\u3002",
     periods,
     chartPoints: [],
     benchmark
   };
+}
+
+function buildAdaptivePeriodAnalysis(
+  label: PeriodAnalysis["label"],
+  allBars: PriceBar[],
+  preferredLength: number,
+  shortWindow: number,
+  longWindow: number
+): PeriodAnalysis {
+  const minimumBars = 20;
+  const bars = allBars.slice(-Math.min(preferredLength, allBars.length));
+
+  if (bars.length < minimumBars) {
+    return {
+      label,
+      signal: "hold",
+      score: 50,
+      trend: "\u8cc7\u6599\u4e0d\u8db3",
+      momentum: "\u8cc7\u6599\u4e0d\u8db3",
+      movingAverage: "\u8cc7\u6599\u4e0d\u8db3",
+      volatility: "\u8cc7\u6599\u4e0d\u8db3",
+      reason: `${label}\u6b77\u53f2\u8cc7\u6599\u4ecd\u504f\u5c11\uff0c\u76ee\u524d\u5148\u63d0\u4f9b\u73fe\u50f9\u8207\u6f32\u8dcc\u8cc7\u8a0a\uff0c\u6280\u8853\u8a55\u4f30\u4ee5\u89c0\u671b\u8655\u7406\u3002`
+    };
+  }
+
+  const safeShortWindow = Math.min(shortWindow, Math.max(3, Math.floor(bars.length / 3)));
+  const safeLongWindow = Math.min(longWindow, Math.max(safeShortWindow + 2, Math.floor(bars.length * 0.8)));
+  return buildPeriodAnalysis(label, bars, safeShortWindow, safeLongWindow);
 }
 
 function buildPeriodAnalysis(
@@ -125,19 +151,20 @@ function buildYearPositionLabel(bars: PriceBar[], currentPrice: number) {
   return "\u4e2d\u9593\u5340";
 }
 
-function buildSummary(name: string, periods: PeriodAnalysis[], overallSignal: Signal) {
+function buildSummary(name: string, periods: PeriodAnalysis[], overallSignal: Signal, availableBars: number) {
   const bullishCount = periods.filter((period) => period.signal === "buy").length;
   const bearishCount = periods.filter((period) => period.signal === "sell").length;
+  const limitedData = availableBars < 180;
 
   if (overallSignal === "buy") {
-    return `${name} \u76ee\u524d\u591a\u982d\u7d50\u69cb\u8f03\u5b8c\u6574\uff0c${bullishCount} \u500b\u9031\u671f\u7ad9\u5728\u504f\u5f37\u5340\uff0c\u8f03\u9069\u5408\u5206\u6279\u89c0\u5bdf\u5e03\u5c40\u3002`;
+    return `${name} \u76ee\u524d\u591a\u982d\u7d50\u69cb\u8f03\u5b8c\u6574\uff0c${bullishCount} \u500b\u9031\u671f\u7ad9\u5728\u504f\u5f37\u5340\uff0c\u8f03\u9069\u5408\u5206\u6279\u89c0\u5bdf\u5e03\u5c40\u3002${limitedData ? "\u4f46\u6b77\u53f2\u8cc7\u6599\u504f\u5c11\uff0c\u5224\u8b80\u8981\u66f4\u4fdd\u5b88\u3002" : ""}`;
   }
 
   if (overallSignal === "sell") {
-    return `${name} \u76ee\u524d\u8f49\u5f31\u8a0a\u865f\u8f03\u660e\u986f\uff0c${bearishCount} \u500b\u9031\u671f\u504f\u7a7a\uff0c\u82e5\u5df2\u6301\u6709\u53ef\u512a\u5148\u6aa2\u67e5\u505c\u5229\u505c\u640d\u3002`;
+    return `${name} \u76ee\u524d\u8f49\u5f31\u8a0a\u865f\u8f03\u660e\u986f\uff0c${bearishCount} \u500b\u9031\u671f\u504f\u7a7a\uff0c\u82e5\u5df2\u6301\u6709\u53ef\u512a\u5148\u6aa2\u67e5\u505c\u5229\u505c\u640d\u3002${limitedData ? "\u4f46\u6b77\u53f2\u8cc7\u6599\u504f\u5c11\uff0c\u8acb\u642d\u914d\u5176\u4ed6\u8cc7\u8a0a\u4ea4\u53c9\u78ba\u8a8d\u3002" : ""}`;
   }
 
-  return `${name} \u73fe\u968e\u6bb5\u591a\u7a7a\u8a0a\u865f\u5206\u6b67\uff0c\u77ed\u4e2d\u9577\u9031\u671f\u5c1a\u672a\u540c\u6b65\uff0c\u8f03\u9069\u5408\u7b49\u5f85\u66f4\u660e\u78ba\u7684\u65b9\u5411\u3002`;
+  return `${name} \u73fe\u968e\u6bb5\u591a\u7a7a\u8a0a\u865f\u5206\u6b67\uff0c\u77ed\u4e2d\u9577\u9031\u671f\u5c1a\u672a\u540c\u6b65\uff0c\u8f03\u9069\u5408\u7b49\u5f85\u66f4\u660e\u78ba\u7684\u65b9\u5411\u3002${limitedData ? "\u76ee\u524d\u53ef\u7528\u6b77\u53f2\u8cc7\u6599\u8f03\u5c11\uff0c\u5efa\u8b70\u4ee5\u8f03\u4fdd\u5b88\u7684\u89d2\u5ea6\u89e3\u8b80\u3002" : ""}`;
 }
 
 function buildPeriodReason(

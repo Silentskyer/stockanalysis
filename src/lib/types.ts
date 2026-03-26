@@ -49,6 +49,7 @@ export interface StockAnalysisResult {
   market: "TW";
   sector: string;
   currentPrice: number;
+  changePercent: number;
   overallSignal: Signal;
   overallScore: number;
   yearPositionLabel: string;

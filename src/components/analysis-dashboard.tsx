@@ -24,6 +24,7 @@ const copy = {
   addFavorite: "\u52a0\u5165\u81ea\u9078",
   addedFavorite: "\u5df2\u52a0\u5165\u81ea\u9078",
   price: "\u73fe\u50f9",
+  changePercent: "\u6f32\u8dcc\u5e45",
   yearPosition: "\u5e74\u5167\u5340\u9593\u4f4d\u7f6e",
   overallScore: "\u7d9c\u5408\u5206\u6578",
   scorePrefix: "\u5206\u6578",
@@ -260,6 +261,12 @@ export function AnalysisDashboard() {
                     <strong>{formatNumber(result.currentPrice)}</strong>
                   </div>
                   <div>
+                    <span className="metric-label">{copy.changePercent}</span>
+                    <strong className={result.changePercent >= 0 ? "positive-text" : "negative-text"}>
+                      {formatSigned(result.changePercent)}%
+                    </strong>
+                  </div>
+                  <div>
                     <span className="metric-label">{copy.yearPosition}</span>
                     <strong>{result.yearPositionLabel}</strong>
                   </div>
@@ -416,4 +423,9 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("zh-TW", {
     maximumFractionDigits: 2
   }).format(value);
+}
+
+function formatSigned(value: number) {
+  const rounded = Math.round(value * 100) / 100;
+  return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }
