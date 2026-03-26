@@ -87,8 +87,13 @@ const industryNameMap: Record<string, string> = {
 };
 
 export async function fetchFugleStockHistory(symbol: string) {
+  const today = new Date();
+  const fromDate = new Date(today);
+  fromDate.setFullYear(today.getFullYear() - 1);
+  const from = formatDate(fromDate);
+  const to = formatDate(today);
   const data = await fugleFetch<FugleHistoricalResponse>(
-    `/historical/candles/${encodeURIComponent(symbol)}?fields=open,high,low,close,volume&sort=asc&timeframe=D`
+    `/historical/candles/${encodeURIComponent(symbol)}?fields=open,high,low,close,volume&sort=asc&timeframe=D&from=${from}&to=${to}`
   );
 
   const bars: PriceBar[] = data.data
@@ -214,4 +219,8 @@ async function fugleFetch<T>(path: string): Promise<T> {
   }
 
   return (await response.json()) as T;
+}
+
+function formatDate(date: Date) {
+  return date.toISOString().slice(0, 10);
 }

@@ -76,16 +76,23 @@ function selectHistory(
   fugleHistory: PromiseSettledResult<Awaited<ReturnType<typeof fetchFugleStockHistory>>>,
   yahooHistory: PromiseSettledResult<Awaited<ReturnType<typeof fetchYahooStockHistory>>>
 ) {
-  if (fugleHistory.status === "fulfilled" && fugleHistory.value.bars.length) {
+  const fugleBars = fugleHistory.status === "fulfilled" ? fugleHistory.value.bars.length : 0;
+  const yahooBars = yahooHistory.status === "fulfilled" ? yahooHistory.value.bars.length : 0;
+
+  if (fugleBars >= yahooBars && fugleBars > 0 && fugleHistory.status === "fulfilled") {
     return fugleHistory.value;
   }
 
-  if (yahooHistory.status === "fulfilled" && yahooHistory.value.bars.length) {
+  if (yahooBars > 0 && yahooHistory.status === "fulfilled") {
     return {
       symbol: yahooHistory.value.symbol.replace(/\.(TW|TWO)$/i, ""),
       name: yahooHistory.value.name,
       bars: yahooHistory.value.bars
     };
+  }
+
+  if (fugleBars > 0 && fugleHistory.status === "fulfilled") {
+    return fugleHistory.value;
   }
 
   return {
