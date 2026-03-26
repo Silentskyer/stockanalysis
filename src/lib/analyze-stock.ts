@@ -3,10 +3,23 @@ import { findDirectoryItem } from "@/lib/stock-directory";
 import { fetchFugleQuote, fetchFugleStockHistory } from "@/lib/fugle-marketdata";
 
 export async function analyzeStock(symbol: string): Promise<StockAnalysisResult> {
-  const { bars, name, symbol: resolvedSymbol } = await fetchFugleStockHistory(symbol);
+  const [historyResult, quoteResult, benchmarkResult] = await Promise.allSettled([
+    fetchFugleStockHistory(symbol),
+    fetchFugleQuote(symbol),
+    fetchFugleQuote("0050")
+  ]);
+
+  if (quoteResult.status !== "fulfilled") {
+    throw new Error("\u76ee\u524d\u9023\u73fe\u50f9\u8cc7\u6599\u90fd\u7121\u6cd5\u53d6\u5f97\uff0c\u8acb\u7a0d\u5f8c\u518d\u8a66\u3002");
+  }
+
+  const quote = quoteResult.value;
+  const history = historyResult.status === "fulfilled" ? historyResult.value : null;
+  const benchmarkQuote = benchmarkResult.status === "fulfilled" ? benchmarkResult.value : quote;
+  const resolvedSymbol = history?.symbol ?? quote.symbol ?? symbol;
+  const name = history?.name ?? quote.name ?? symbol;
+  const bars = history?.bars ?? [];
   const directoryItem = findDirectoryItem(resolvedSymbol) ?? findDirectoryItem(symbol);
-  const quote = await fetchFugleQuote(symbol);
-  const benchmarkQuote = await fetchFugleQuote("0050");
   const currentPrice = quote.lastPrice ?? quote.closePrice ?? bars.at(-1)?.close ?? 0;
   const availableBars = bars.length;
   const weekAnalysis = buildAdaptivePeriodAnalysis("\u9031\u7dda", bars, 30, 5, 10);
@@ -141,6 +154,7 @@ function average(values: number[]) {
 }
 
 function buildYearPositionLabel(bars: PriceBar[], currentPrice: number) {
+  if (!bars.length) return "\u5340\u9593\u8cc7\u6599\u4e0d\u8db3";
   const yearHigh = Math.max(...bars.map((bar) => bar.high));
   const yearLow = Math.min(...bars.map((bar) => bar.low));
   if (yearHigh === yearLow) return "\u5340\u9593\u8cc7\u6599\u4e0d\u8db3";
