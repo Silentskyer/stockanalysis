@@ -1,8 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
-import { LineChart } from "@/components/line-chart";
-import { normalizeStockQuery, searchStocks, sectorOptions, stockDirectory, type StockDirectoryItem } from "@/lib/stock-directory";
+import { normalizeStockQuery, searchStocks, sectorOptions, stockDirectory } from "@/lib/stock-directory";
 import type { StockAnalysisResult, StockSearchItem } from "@/lib/types";
 
 const defaultQuery = "\u53f0\u7a4d\u96fb";
@@ -16,7 +15,7 @@ const copy = {
     "\u652f\u63f4\u4e2d\u6587\u540d\u7a31\u3001\u80a1\u7968\u4ee3\u78bc\uff0c\u672a\u6536\u9304\u7684\u80a1\u7968\u6703\u81ea\u52d5\u53bb Yahoo \u641c\u5c0b\u3002",
   searchBadge: "\u4e2d\u6587 / \u4ee3\u78bc / \u6578\u5b57",
   searchPlaceholder:
-    "\u4f8b\u5982 \u53f0\u7a4d\u96fb\u30012330\u30011301\u3001Apple\u3001\u8f1d\u9054",
+    "\u4f8b\u5982 \u53f0\u7a4d\u96fb\u3001\u65fa\u5b8f\u3001\u65fa\u77fd\u30012337\u30016223",
   analyzeLoading: "\u5206\u6790\u4e2d...",
   analyze: "\u958b\u59cb\u5206\u6790",
   searchHint:
@@ -41,12 +40,7 @@ const copy = {
   countUnit: "\u6a94",
   remove: "\u79fb\u9664",
   emptyFavorites:
-    "\u5f9e\u5206\u6790\u7d50\u679c\u52a0\u5165\u81ea\u9078\u5f8c\uff0c\u6703\u986f\u793a\u5728\u9019\u88e1\u3002",
-  stockChartTitle: "\u500b\u80a1\u6280\u8853\u8d70\u52e2\u5716",
-  stockChartSubtitle: "\u8fd1 120 \u500b\u4ea4\u6613\u65e5\u6536\u76e4\u50f9",
-  marketChartTitle: "\u5927\u76e4\u8d70\u52e2\u5716",
-  marketChartSubtitle: "\u540c\u671f\u6bd4\u8f03\u5927\u76e4\u65b9\u5411",
-  yahooTag: "Yahoo"
+    "\u5f9e\u5206\u6790\u7d50\u679c\u52a0\u5165\u81ea\u9078\u5f8c\uff0c\u6703\u986f\u793a\u5728\u9019\u88e1\u3002"
 } as const;
 
 export function AnalysisDashboard() {
@@ -87,9 +81,7 @@ export function AnalysisDashboard() {
       try {
         const response = await fetch(
           `/api/search?q=${encodeURIComponent(query)}&sector=${encodeURIComponent(sector)}`,
-          {
-            signal: controller.signal
-          }
+          { signal: controller.signal }
         );
         const payload = (await response.json()) as { items: StockSearchItem[] };
         setSuggestions(payload.items ?? []);
@@ -131,7 +123,6 @@ export function AnalysisDashboard() {
 
     return favorites.map<StockSearchItem>((symbol) => {
       const fallbackMarket: StockSearchItem["market"] = symbol.endsWith(".TW") ? "TW" : "US";
-
       return (
         knownItems.find((item) => item.symbol === symbol) ?? {
           symbol,
@@ -281,20 +272,6 @@ export function AnalysisDashboard() {
                 <p className="risk-text">{result.riskNotice}</p>
               </article>
 
-              <div className="chart-grid">
-                <LineChart
-                  points={result.chartPoints}
-                  subtitle={copy.stockChartSubtitle}
-                  title={copy.stockChartTitle}
-                />
-                <LineChart
-                  points={result.benchmark.points}
-                  subtitle={`${copy.marketChartSubtitle} | ${result.benchmark.name} ${formatSigned(result.benchmark.changePercent)}%`}
-                  title={copy.marketChartTitle}
-                  tone="market"
-                />
-              </div>
-
               <div className="period-grid">
                 {result.periods.map((period) => (
                   <article className="period-card" key={period.label}>
@@ -358,7 +335,7 @@ export function AnalysisDashboard() {
                     </p>
                   </div>
                   <span className="stock-market">
-                    {item.market} {item.source === "yahoo" ? copy.yahooTag : ""}
+                    {item.market} {item.source === "yahoo" ? "Yahoo" : ""}
                   </span>
                 </button>
               ))}
@@ -439,9 +416,4 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat("zh-TW", {
     maximumFractionDigits: 2
   }).format(value);
-}
-
-function formatSigned(value: number) {
-  const rounded = Math.round(value * 100) / 100;
-  return rounded > 0 ? `+${rounded}` : `${rounded}`;
 }

@@ -27,6 +27,16 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
+    symbol: "2337.TW",
+    code: "2337",
+    name: "\u65fa\u5b8f",
+    market: "TW",
+    sector: "\u96fb\u5b50",
+    aliases: ["mxic", "\u65fa\u5b8f\u96fb\u5b50", "macronix"],
+    description: "\u8a18\u61b6\u9ad4\u8207 NOR Flash \u76f8\u95dc\u80a1\u3002",
+    source: "local"
+  },
+  {
     symbol: "2317.TW",
     code: "2317",
     name: "\u9d3b\u6d77",
@@ -34,6 +44,16 @@ export const stockDirectory: StockDirectoryItem[] = [
     sector: "\u96fb\u5b50",
     aliases: ["hon hai", "foxconn", "\u5bcc\u58eb\u5eb7"],
     description: "\u96fb\u5b50\u4ee3\u5de5\u8207 AI \u4f3a\u670d\u5668\u4f9b\u61c9\u93c8\u4ee3\u8868\u3002",
+    source: "local"
+  },
+  {
+    symbol: "6223.TW",
+    code: "6223",
+    name: "\u65fa\u77fd",
+    market: "TW",
+    sector: "\u96fb\u5b50",
+    aliases: ["MPI", "\u65fa\u77fd\u79d1\u6280", "mpi corp"],
+    description: "\u534a\u5c0e\u9ad4\u6e2c\u8a66\u4ecb\u9762\u8207 probe card \u76f8\u95dc\u80a1\u3002",
     source: "local"
   },
   {
