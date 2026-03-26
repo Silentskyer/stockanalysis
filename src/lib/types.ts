@@ -10,7 +10,7 @@ export interface PriceBar {
 }
 
 export interface PeriodAnalysis {
-  label: "週線" | "月線" | "年線";
+  label: "\u9031\u7dda" | "\u6708\u7dda" | "\u5e74\u7dda";
   signal: Signal;
   score: number;
   trend: string;

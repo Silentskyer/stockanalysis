@@ -5,9 +5,9 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
   const { bars, name, symbol: resolvedSymbol } = await fetchYahooStockHistory(symbol);
   const currentPrice = bars.at(-1)?.close ?? 0;
 
-  const weekAnalysis = buildPeriodAnalysis("週線", bars.slice(-30), 5, 10);
-  const monthAnalysis = buildPeriodAnalysis("月線", bars.slice(-120), 20, 60);
-  const yearAnalysis = buildPeriodAnalysis("年線", bars.slice(-260), 60, 120);
+  const weekAnalysis = buildPeriodAnalysis("\u9031\u7dda", bars.slice(-30), 5, 10);
+  const monthAnalysis = buildPeriodAnalysis("\u6708\u7dda", bars.slice(-120), 20, 60);
+  const yearAnalysis = buildPeriodAnalysis("\u5e74\u7dda", bars.slice(-260), 60, 120);
   const periods = [weekAnalysis, monthAnalysis, yearAnalysis];
 
   const overallScore = Math.round(
@@ -26,7 +26,7 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
     yearPositionLabel,
     summary: buildSummary(name, periods, overallSignal),
     riskNotice:
-      "本結果以歷史價格與成交量推估，不代表未來報酬；若遇到財報、政策或突發事件，訊號可能快速失效。",
+      "\u672c\u7d50\u679c\u4f9d\u6b77\u53f2\u50f9\u683c\u8207\u6210\u4ea4\u91cf\u4f30\u7b97\uff0c\u50c5\u4f9b\u6280\u8853\u5206\u6790\u53c3\u8003\uff0c\u4e0d\u69cb\u6210\u6295\u8cc7\u5efa\u8b70\uff1b\u82e5\u9047\u5230\u8ca1\u5831\u3001\u653f\u7b56\u6216\u7a81\u767c\u4e8b\u4ef6\uff0c\u8a0a\u865f\u53ef\u80fd\u5feb\u901f\u5931\u6548\u3002",
     periods
   };
 }
@@ -69,10 +69,7 @@ function movingAverage(values: number[], window: number) {
 }
 
 function percentageChange(base: number, current: number) {
-  if (base === 0) {
-    return 0;
-  }
-
+  if (base === 0) return 0;
   return ((current - base) / base) * 100;
 }
 
@@ -81,18 +78,13 @@ function annualizedVolatility(closes: number[]) {
   const average = returns.reduce((sum, value) => sum + value, 0) / returns.length;
   const variance =
     returns.reduce((sum, value) => sum + (value - average) ** 2, 0) / Math.max(returns.length - 1, 1);
-
   return Math.sqrt(variance) * Math.sqrt(252);
 }
 
 function volumeTrendScore(bars: PriceBar[]) {
   const recent = average(bars.slice(-5).map((bar) => bar.volume));
   const baseline = average(bars.slice(-20).map((bar) => bar.volume));
-
-  if (baseline === 0) {
-    return 0;
-  }
-
+  if (baseline === 0) return 0;
   const volumeRatio = recent / baseline;
   return clamp((volumeRatio - 1) * 10, -8, 8);
 }
@@ -105,21 +97,12 @@ function buildYearPositionLabel(bars: PriceBar[], currentPrice: number) {
   const yearHigh = Math.max(...bars.map((bar) => bar.high));
   const yearLow = Math.min(...bars.map((bar) => bar.low));
 
-  if (yearHigh === yearLow) {
-    return "區間資料不足";
-  }
+  if (yearHigh === yearLow) return "\u5340\u9593\u8cc7\u6599\u4e0d\u8db3";
 
   const ratio = ((currentPrice - yearLow) / (yearHigh - yearLow)) * 100;
-
-  if (ratio >= 75) {
-    return "偏高區";
-  }
-
-  if (ratio <= 25) {
-    return "偏低區";
-  }
-
-  return "中間區";
+  if (ratio >= 75) return "\u504f\u9ad8\u5340";
+  if (ratio <= 25) return "\u504f\u4f4e\u5340";
+  return "\u4e2d\u9593\u5340";
 }
 
 function buildSummary(name: string, periods: PeriodAnalysis[], overallSignal: Signal) {
@@ -127,14 +110,14 @@ function buildSummary(name: string, periods: PeriodAnalysis[], overallSignal: Si
   const bearishCount = periods.filter((period) => period.signal === "sell").length;
 
   if (overallSignal === "buy") {
-    return `${name} 目前以多頭結構為主，${bullishCount} 個週期站在偏強區，較適合分批觀察切入。`;
+    return `${name} \u76ee\u524d\u591a\u982d\u7d50\u69cb\u8f03\u5b8c\u6574\uff0c${bullishCount} \u500b\u9031\u671f\u7ad9\u5728\u504f\u5f37\u5340\uff0c\u8f03\u9069\u5408\u5206\u6279\u89c0\u5bdf\u5e03\u5c40\u3002`;
   }
 
   if (overallSignal === "sell") {
-    return `${name} 目前轉弱訊號較明顯，${bearishCount} 個週期偏空，若已持有可優先檢查停利停損。`;
+    return `${name} \u76ee\u524d\u8f49\u5f31\u8a0a\u865f\u8f03\u660e\u986f\uff0c${bearishCount} \u500b\u9031\u671f\u504f\u7a7a\uff0c\u82e5\u5df2\u6301\u6709\u53ef\u512a\u5148\u6aa2\u67e5\u505c\u5229\u505c\u640d\u3002`;
   }
 
-  return `${name} 現階段多空訊號分歧，短中長週期尚未同步，較適合等待更明確的突破或轉弱。`;
+  return `${name} \u73fe\u968e\u6bb5\u591a\u7a7a\u8a0a\u865f\u5206\u6b67\uff0c\u77ed\u4e2d\u9577\u9031\u671f\u5c1a\u672a\u540c\u6b65\uff0c\u8f03\u9069\u5408\u7b49\u5f85\u66f4\u660e\u78ba\u7684\u65b9\u5411\u3002`;
 }
 
 function buildPeriodReason(
@@ -147,87 +130,58 @@ function buildPeriodReason(
   volatility: number
 ) {
   const direction =
-    shortMa > longMa ? "短期均線位於長期均線之上" : "短期均線仍低於長期均線";
+    shortMa > longMa
+      ? "\u77ed\u671f\u5747\u7dda\u4f4d\u65bc\u9577\u671f\u5747\u7dda\u4e4b\u4e0a"
+      : "\u77ed\u671f\u5747\u7dda\u4ecd\u4f4e\u65bc\u9577\u671f\u5747\u7dda";
   const momentum =
-    priceChange >= 0 ? `區間漲幅約 ${round(priceChange)}%` : `區間跌幅約 ${round(Math.abs(priceChange))}%`;
-  const risk = volatility > 0.45 ? "波動偏大，訊號可靠度需要折扣。" : "波動尚可，訊號穩定度相對較好。";
+    priceChange >= 0
+      ? `\u5340\u9593\u6f32\u5e45\u7d04 ${round(priceChange)}%`
+      : `\u5340\u9593\u8dcc\u5e45\u7d04 ${round(Math.abs(priceChange))}%`;
+  const risk =
+    volatility > 0.45
+      ? "\u6ce2\u52d5\u504f\u5927\uff0c\u8a0a\u865f\u53ef\u9760\u5ea6\u9700\u8981\u6298\u6263\u3002"
+      : "\u6ce2\u52d5\u5c1a\u53ef\uff0c\u8a0a\u865f\u7a69\u5b9a\u5ea6\u76f8\u5c0d\u8f03\u597d\u3002";
 
   if (signal === "buy") {
-    return `${label}分數 ${score}，${direction}，${momentum}，整體偏向強勢延續。${risk}`;
+    return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u6574\u9ad4\u504f\u5411\u5f37\u52e2\u5ef6\u7e8c\u3002${risk}`;
   }
 
   if (signal === "sell") {
-    return `${label}分數 ${score}，${direction}，${momentum}，結構偏弱，較適合保守看待。${risk}`;
+    return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u7d50\u69cb\u504f\u5f31\uff0c\u8f03\u9069\u5408\u4fdd\u5b88\u770b\u5f85\u3002${risk}`;
   }
 
-  return `${label}分數 ${score}，${direction}，${momentum}，目前多空尚未拉開差距。${risk}`;
+  return `${label}\u5206\u6578 ${score}\uff0c${direction}\uff0c${momentum}\uff0c\u76ee\u524d\u591a\u7a7a\u5c1a\u672a\u62c9\u958b\u5dee\u8ddd\u3002${risk}`;
 }
 
 function describeTrend(priceChange: number, shortMa: number, longMa: number) {
-  if (priceChange > 6 && shortMa > longMa) {
-    return "上升趨勢";
-  }
-
-  if (priceChange < -6 && shortMa < longMa) {
-    return "下降趨勢";
-  }
-
-  return "盤整中";
+  if (priceChange > 6 && shortMa > longMa) return "\u4e0a\u5347\u8da8\u52e2";
+  if (priceChange < -6 && shortMa < longMa) return "\u4e0b\u964d\u8da8\u52e2";
+  return "\u76e4\u6574\u4e2d";
 }
 
 function describeMomentum(priceChange: number) {
-  if (priceChange > 8) {
-    return "強";
-  }
-
-  if (priceChange > 2) {
-    return "偏強";
-  }
-
-  if (priceChange < -8) {
-    return "弱";
-  }
-
-  if (priceChange < -2) {
-    return "偏弱";
-  }
-
-  return "中性";
+  if (priceChange > 8) return "\u5f37";
+  if (priceChange > 2) return "\u504f\u5f37";
+  if (priceChange < -8) return "\u5f31";
+  if (priceChange < -2) return "\u504f\u5f31";
+  return "\u4e2d\u6027";
 }
 
 function describeMovingAverage(currentPrice: number, shortMa: number, longMa: number) {
-  if (currentPrice > shortMa && shortMa > longMa) {
-    return "價位在雙均線之上";
-  }
-
-  if (currentPrice < shortMa && shortMa < longMa) {
-    return "價位在雙均線之下";
-  }
-
-  return "均線糾結";
+  if (currentPrice > shortMa && shortMa > longMa) return "\u50f9\u4f4d\u5728\u96d9\u5747\u7dda\u4e4b\u4e0a";
+  if (currentPrice < shortMa && shortMa < longMa) return "\u50f9\u4f4d\u5728\u96d9\u5747\u7dda\u4e4b\u4e0b";
+  return "\u5747\u7dda\u7cfe\u7d50";
 }
 
 function describeVolatility(volatility: number) {
-  if (volatility > 0.5) {
-    return "高";
-  }
-
-  if (volatility > 0.28) {
-    return "中";
-  }
-
-  return "低";
+  if (volatility > 0.5) return "\u9ad8";
+  if (volatility > 0.28) return "\u4e2d";
+  return "\u4f4e";
 }
 
 function scoreToSignal(score: number): Signal {
-  if (score >= 62) {
-    return "buy";
-  }
-
-  if (score <= 38) {
-    return "sell";
-  }
-
+  if (score >= 62) return "buy";
+  if (score <= 38) return "sell";
   return "hold";
 }
 
