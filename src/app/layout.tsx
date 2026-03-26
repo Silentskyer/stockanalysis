@@ -4,7 +4,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "StockScope",
-  description: "\u4f7f\u7528 Yahoo Finance \u8cc7\u6599\u9032\u884c\u500b\u80a1\u5206\u6790\u8207\u5927\u76e4\u89c0\u5bdf\u3002"
+  description: "\u4f7f\u7528 Fugle \u8cc7\u6599\u9032\u884c\u53f0\u80a1\u500b\u80a1\u5206\u6790\u8207\u5927\u76e4\u89c0\u5bdf\u3002"
 };
 
 export default function RootLayout({

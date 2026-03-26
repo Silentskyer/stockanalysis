@@ -37,16 +37,16 @@ export interface StockSearchItem {
   symbol: string;
   code: string;
   name: string;
-  market: "TW" | "US";
+  market: "TW";
   sector: string;
   description: string;
-  source: "local" | "yahoo";
+  source: "local" | "fugle";
 }
 
 export interface StockAnalysisResult {
   symbol: string;
   name: string;
-  market: "TW" | "US";
+  market: "TW";
   sector: string;
   currentPrice: number;
   overallSignal: Signal;

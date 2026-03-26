@@ -1,23 +1,20 @@
-import type { ChartPoint, MarketOverview, PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
+import type { MarketOverview, PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
 import { findDirectoryItem } from "@/lib/stock-directory";
-import { fetchYahooStockHistory } from "@/lib/yahoo-finance";
+import { fetchFugleQuote, fetchFugleStockHistory } from "@/lib/fugle-marketdata";
 
 export async function analyzeStock(symbol: string): Promise<StockAnalysisResult> {
-  const { bars, name, symbol: resolvedSymbol } = await fetchYahooStockHistory(symbol);
+  const { bars, name, symbol: resolvedSymbol } = await fetchFugleStockHistory(symbol);
   const directoryItem = findDirectoryItem(resolvedSymbol) ?? findDirectoryItem(symbol);
-  const market = inferMarket(resolvedSymbol);
-  const benchmarkSymbol = market === "TW" ? "^TWII" : "^GSPC";
-  const benchmarkName = market === "TW" ? "\u53f0\u7063\u52a0\u6b0a\u6307\u6578" : "S&P 500";
-  const benchmarkHistory = await fetchYahooStockHistory(benchmarkSymbol, "1y");
+  const benchmarkQuote = await fetchFugleQuote("0050");
   const currentPrice = bars.at(-1)?.close ?? 0;
 
-  if (bars.length < 260) {
+  if (bars.length < 120) {
     throw new Error("\u6b77\u53f2\u8cc7\u6599\u4e0d\u8db3\uff0c\u7121\u6cd5\u5b8c\u6210\u9031\u3001\u6708\u3001\u5e74\u5206\u6790\u3002");
   }
 
   const weekAnalysis = buildPeriodAnalysis("\u9031\u7dda", bars.slice(-30), 5, 10);
   const monthAnalysis = buildPeriodAnalysis("\u6708\u7dda", bars.slice(-120), 20, 60);
-  const yearAnalysis = buildPeriodAnalysis("\u5e74\u7dda", bars.slice(-260), 60, 120);
+  const yearAnalysis = buildPeriodAnalysis("\u5e74\u7dda", bars, 60, 120);
   const periods = [weekAnalysis, monthAnalysis, yearAnalysis];
 
   const overallScore = Math.round(
@@ -25,13 +22,13 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
   );
 
   const overallSignal = scoreToSignal(overallScore);
-  const yearPositionLabel = buildYearPositionLabel(bars.slice(-260), currentPrice);
-  const benchmark = buildMarketOverview(benchmarkSymbol, benchmarkName, benchmarkHistory.bars);
+  const yearPositionLabel = buildYearPositionLabel(bars, currentPrice);
+  const benchmark = buildMarketOverview(benchmarkQuote);
 
   return {
     symbol: resolvedSymbol,
     name,
-    market,
+    market: "TW",
     sector: directoryItem?.sector ?? "\u5176\u4ed6",
     currentPrice: round(currentPrice),
     overallSignal,
@@ -41,7 +38,7 @@ export async function analyzeStock(symbol: string): Promise<StockAnalysisResult>
     riskNotice:
       "\u672c\u7d50\u679c\u4f9d\u6b77\u53f2\u50f9\u683c\u8207\u6210\u4ea4\u91cf\u4f30\u7b97\uff0c\u50c5\u4f9b\u6280\u8853\u5206\u6790\u53c3\u8003\uff0c\u4e0d\u69cb\u6210\u6295\u8cc7\u5efa\u8b70\uff1b\u82e5\u9047\u5230\u8ca1\u5831\u3001\u653f\u7b56\u6216\u7a81\u767c\u4e8b\u4ef6\uff0c\u8a0a\u865f\u53ef\u80fd\u5feb\u901f\u5931\u6548\u3002",
     periods,
-    chartPoints: toChartPoints(bars.slice(-120)),
+    chartPoints: [],
     benchmark
   };
 }
@@ -78,29 +75,14 @@ function buildPeriodAnalysis(
   };
 }
 
-function buildMarketOverview(symbol: string, name: string, bars: PriceBar[]): MarketOverview {
-  const points = toChartPoints(bars.slice(-120));
-  const currentPrice = bars.at(-1)?.close ?? 0;
-  const basePrice = bars.at(Math.max(0, bars.length - 120))?.close ?? currentPrice;
-
+function buildMarketOverview(quote: Awaited<ReturnType<typeof fetchFugleQuote>>): MarketOverview {
   return {
-    symbol,
-    name,
-    currentPrice: round(currentPrice),
-    changePercent: round(percentageChange(basePrice, currentPrice)),
-    points
+    symbol: quote.symbol,
+    name: quote.name,
+    currentPrice: round(quote.lastPrice ?? quote.closePrice ?? 0),
+    changePercent: round(quote.changePercent ?? 0),
+    points: []
   };
-}
-
-function toChartPoints(bars: PriceBar[]): ChartPoint[] {
-  return bars.map((bar) => ({
-    timestamp: bar.timestamp,
-    value: round(bar.close)
-  }));
-}
-
-function inferMarket(symbol: string) {
-  return symbol.endsWith(".TW") ? "TW" : "US";
 }
 
 function movingAverage(values: number[], window: number) {

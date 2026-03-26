@@ -12,7 +12,7 @@ const copy = {
   searchFailed: "\u67e5\u8a62\u5931\u6557",
   searchLabel: "\u641c\u5c0b\u80a1\u7968",
   searchSubtitle:
-    "\u652f\u63f4\u4e2d\u6587\u540d\u7a31\u3001\u80a1\u7968\u4ee3\u78bc\uff0c\u672a\u6536\u9304\u7684\u80a1\u7968\u6703\u81ea\u52d5\u53bb Yahoo \u641c\u5c0b\u3002",
+    "\u652f\u63f4\u53f0\u80a1\u4e2d\u6587\u540d\u7a31\u8207\u80a1\u7968\u4ee3\u78bc\uff0c\u672a\u6536\u9304\u7684\u80a1\u7968\u6703\u81ea\u52d5\u53bb Fugle \u67e5\u8a62\u3002",
   searchBadge: "\u4e2d\u6587 / \u4ee3\u78bc / \u6578\u5b57",
   searchPlaceholder:
     "\u4f8b\u5982 \u53f0\u7a4d\u96fb\u3001\u65fa\u5b8f\u3001\u65fa\u77fd\u30012337\u30016223",
@@ -46,7 +46,7 @@ const copy = {
 export function AnalysisDashboard() {
   const [query, setQuery] = useState(defaultQuery);
   const [sector, setSector] = useState<(typeof sectorOptions)[number]>("\u5168\u90e8");
-  const [activeSymbol, setActiveSymbol] = useState("2330.TW");
+  const [activeSymbol, setActiveSymbol] = useState("2330");
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -66,7 +66,7 @@ export function AnalysisDashboard() {
   }, []);
 
   useEffect(() => {
-    void runAnalysis("2330.TW");
+    void runAnalysis("2330");
   }, []);
 
   useEffect(() => {
@@ -110,28 +110,28 @@ export function AnalysisDashboard() {
         ? [
             {
               symbol: result.symbol,
-              code: result.symbol.replace(".TW", ""),
+              code: result.symbol,
               name: result.name,
               market: result.market,
               sector: result.sector,
               description: result.summary,
-              source: "yahoo" as const
+              source: "fugle" as const
             }
           ]
         : [])
     ];
 
     return favorites.map<StockSearchItem>((symbol) => {
-      const fallbackMarket: StockSearchItem["market"] = symbol.endsWith(".TW") ? "TW" : "US";
+      const fallbackMarket: StockSearchItem["market"] = "TW";
       return (
         knownItems.find((item) => item.symbol === symbol) ?? {
           symbol,
-          code: symbol.replace(".TW", ""),
+          code: symbol,
           name: symbol,
           market: fallbackMarket,
           sector: "\u5176\u4ed6",
           description: symbol,
-          source: "yahoo" as const
+          source: "fugle" as const
         }
       );
     });
@@ -335,7 +335,7 @@ export function AnalysisDashboard() {
                     </p>
                   </div>
                   <span className="stock-market">
-                    {item.market} {item.source === "yahoo" ? "Yahoo" : ""}
+                    {item.market} {item.source === "fugle" ? "Fugle" : ""}
                   </span>
                 </button>
               ))}

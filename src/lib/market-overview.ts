@@ -1,25 +1,23 @@
 import type { MarketOverview } from "@/lib/types";
-import { fetchYahooStockHistory } from "@/lib/yahoo-finance";
+import { fetchFugleQuote } from "@/lib/fugle-marketdata";
 
 const marketSymbols = [
-  { symbol: "^TWII", name: "\u53f0\u7063\u52a0\u6b0a\u6307\u6578" },
-  { symbol: "^GSPC", name: "S&P 500" },
-  { symbol: "^IXIC", name: "NASDAQ" },
-  { symbol: "^DJI", name: "Dow Jones" }
+  { symbol: "0050", name: "\u5143\u5927\u53f0\u706350" },
+  { symbol: "006208", name: "\u5bcc\u90a6\u53f050" },
+  { symbol: "0056", name: "\u5143\u5927\u9ad8\u80a1\u606f" },
+  { symbol: "2330", name: "\u53f0\u7a4d\u96fb" }
 ] as const;
 
 export async function getMarketOverviewList(): Promise<MarketOverview[]> {
   return Promise.all(
     marketSymbols.map(async (item) => {
-      const history = await fetchYahooStockHistory(item.symbol, "1y");
-      const currentPrice = history.bars.at(-1)?.close ?? 0;
-      const basePrice = history.bars.at(0)?.close ?? currentPrice;
+      const quote = await fetchFugleQuote(item.symbol);
 
       return {
-        symbol: item.symbol,
-        name: item.name,
-        currentPrice: round(currentPrice),
-        changePercent: round(basePrice === 0 ? 0 : ((currentPrice - basePrice) / basePrice) * 100),
+        symbol: quote.symbol,
+        name: quote.name ?? item.name,
+        currentPrice: round(quote.lastPrice ?? quote.closePrice ?? 0),
+        changePercent: round(quote.changePercent ?? 0),
         points: []
       };
     })

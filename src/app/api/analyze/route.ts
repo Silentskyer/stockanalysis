@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   if (!symbol) {
     return NextResponse.json(
       {
-        error: "\u8acb\u63d0\u4f9b\u80a1\u7968\u4ee3\u78bc\uff0c\u4f8b\u5982 AAPL \u6216 2330.TW\u3002"
+        error: "\u8acb\u63d0\u4f9b\u53f0\u80a1\u4ee3\u78bc\uff0c\u4f8b\u5982 2330 \u6216 6223\u3002"
       },
       { status: 400 }
     );

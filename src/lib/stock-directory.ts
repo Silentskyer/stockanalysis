@@ -17,7 +17,7 @@ export const sectorOptions = [
 
 export const stockDirectory: StockDirectoryItem[] = [
   {
-    symbol: "2330.TW",
+    symbol: "2330",
     code: "2330",
     name: "\u53f0\u7a4d\u96fb",
     market: "TW",
@@ -27,7 +27,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2337.TW",
+    symbol: "2337",
     code: "2337",
     name: "\u65fa\u5b8f",
     market: "TW",
@@ -37,7 +37,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2317.TW",
+    symbol: "2317",
     code: "2317",
     name: "\u9d3b\u6d77",
     market: "TW",
@@ -47,7 +47,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "6223.TW",
+    symbol: "6223",
     code: "6223",
     name: "\u65fa\u77fd",
     market: "TW",
@@ -57,7 +57,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2454.TW",
+    symbol: "2454",
     code: "2454",
     name: "\u806f\u767c\u79d1",
     market: "TW",
@@ -67,7 +67,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2303.TW",
+    symbol: "2303",
     code: "2303",
     name: "\u806f\u96fb",
     market: "TW",
@@ -77,7 +77,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2308.TW",
+    symbol: "2308",
     code: "2308",
     name: "\u53f0\u9054\u96fb",
     market: "TW",
@@ -87,7 +87,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "1301.TW",
+    symbol: "1301",
     code: "1301",
     name: "\u53f0\u5851",
     market: "TW",
@@ -97,7 +97,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "1303.TW",
+    symbol: "1303",
     code: "1303",
     name: "\u5357\u4e9e",
     market: "TW",
@@ -107,7 +107,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "1326.TW",
+    symbol: "1326",
     code: "1326",
     name: "\u53f0\u5316",
     market: "TW",
@@ -117,7 +117,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2881.TW",
+    symbol: "2881",
     code: "2881",
     name: "\u5bcc\u90a6\u91d1",
     market: "TW",
@@ -127,7 +127,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2882.TW",
+    symbol: "2882",
     code: "2882",
     name: "\u570b\u6cf0\u91d1",
     market: "TW",
@@ -137,7 +137,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2886.TW",
+    symbol: "2886",
     code: "2886",
     name: "\u5146\u8c50\u91d1",
     market: "TW",
@@ -147,7 +147,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2603.TW",
+    symbol: "2603",
     code: "2603",
     name: "\u9577\u69ae",
     market: "TW",
@@ -157,7 +157,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2609.TW",
+    symbol: "2609",
     code: "2609",
     name: "\u967d\u660e",
     market: "TW",
@@ -167,7 +167,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2615.TW",
+    symbol: "2615",
     code: "2615",
     name: "\u842c\u6d77",
     market: "TW",
@@ -177,7 +177,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "2412.TW",
+    symbol: "2412",
     code: "2412",
     name: "\u4e2d\u83ef\u96fb",
     market: "TW",
@@ -187,7 +187,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "0050.TW",
+    symbol: "0050",
     code: "0050",
     name: "\u5143\u5927\u53f0\u706350",
     market: "TW",
@@ -197,7 +197,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "0056.TW",
+    symbol: "0056",
     code: "0056",
     name: "\u5143\u5927\u9ad8\u80a1\u606f",
     market: "TW",
@@ -207,7 +207,7 @@ export const stockDirectory: StockDirectoryItem[] = [
     source: "local"
   },
   {
-    symbol: "006208.TW",
+    symbol: "006208",
     code: "006208",
     name: "\u5bcc\u90a6\u53f050",
     market: "TW",
@@ -215,41 +215,11 @@ export const stockDirectory: StockDirectoryItem[] = [
     aliases: ["\u53f050"],
     description: "\u53f0\u80a1\u5927\u76e4 ETF\u3002",
     source: "local"
-  },
-  {
-    symbol: "AAPL",
-    code: "AAPL",
-    name: "Apple",
-    market: "US",
-    sector: "\u96fb\u5b50",
-    aliases: ["\u860b\u679c", "apple"],
-    description: "\u6d88\u8cbb\u96fb\u5b50\u8207\u670d\u52d9\u751f\u614b\u7cfb\u9f8d\u982d\u3002",
-    source: "local"
-  },
-  {
-    symbol: "MSFT",
-    code: "MSFT",
-    name: "Microsoft",
-    market: "US",
-    sector: "\u96fb\u5b50",
-    aliases: ["\u5fae\u8edf", "microsoft"],
-    description: "\u96f2\u7aef\u8207 AI \u5e73\u53f0\u9f8d\u982d\u3002",
-    source: "local"
-  },
-  {
-    symbol: "NVDA",
-    code: "NVDA",
-    name: "NVIDIA",
-    market: "US",
-    sector: "\u96fb\u5b50",
-    aliases: ["\u8f1d\u9054", "nvidia"],
-    description: "AI \u6676\u7247\u8207\u8cc7\u6599\u4e2d\u5fc3\u6307\u6a19\u80a1\u3002",
-    source: "local"
   }
 ];
 
 export function normalizeStockQuery(input: string) {
-  const query = input.trim();
+  const query = input.trim().replace(/\.TW$/i, "");
   if (!query) return "";
 
   const normalized = query.toLowerCase();
@@ -263,7 +233,7 @@ export function normalizeStockQuery(input: string) {
   });
 
   if (exact) return exact.symbol;
-  if (/^\d{4,6}$/.test(query)) return `${query}.TW`;
+  if (/^\d{4,6}$/.test(query)) return query;
   return query.toUpperCase();
 }
 
