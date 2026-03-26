@@ -347,6 +347,19 @@ input {
   line-height: 1.75;
 }
 
+.news-card {
+  margin-top: 18px;
+  padding: 16px;
+  border-radius: 18px;
+  background: #f5f9ff;
+}
+
+.data-source-text {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 .risk-text {
   margin-top: 14px;
   color: var(--warn);

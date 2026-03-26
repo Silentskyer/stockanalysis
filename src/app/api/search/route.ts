@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchStocks } from "@/lib/stock-directory";
 import { searchFugleStockByCode } from "@/lib/fugle-marketdata";
+import { searchYahooStocks } from "@/lib/yahoo-marketdata";
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
   try {
     const localItems = searchStocks(query, sector);
     const fugleItems = await searchFugleStockByCode(query);
-    const merged = [...localItems, ...fugleItems].filter(
+    const yahooItems = await searchYahooStocks(query).catch(() => []);
+    const merged = [...localItems, ...fugleItems, ...yahooItems].filter(
       (item, index, array) => array.findIndex((candidate) => candidate.symbol === item.symbol) === index
     );
 

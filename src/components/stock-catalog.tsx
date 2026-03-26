@@ -1,34 +1,41 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { sectorOptions, stockDirectory } from "@/lib/stock-directory";
+import type { StockSearchItem } from "@/lib/types";
 
-export function StockCatalog() {
-  const [sector, setSector] = useState<(typeof sectorOptions)[number]>("\u5168\u90e8");
+interface StockCatalogProps {
+  items: StockSearchItem[];
+}
+
+export function StockCatalog({ items }: StockCatalogProps) {
+  const [sector, setSector] = useState("\u5168\u90e8");
   const [query, setQuery] = useState("");
+
+  const sectorOptions = useMemo(() => {
+    return ["\u5168\u90e8", ...new Set(items.map((item) => item.sector).filter(Boolean))];
+  }, [items]);
 
   const filtered = useMemo(() => {
     const normalized = query.trim().toLowerCase();
-    return stockDirectory.filter((item) => {
+    return items.filter((item) => {
       const sectorMatched = sector === "\u5168\u90e8" || item.sector === sector;
       const queryMatched =
         !normalized ||
         item.name.toLowerCase().includes(normalized) ||
         item.code.toLowerCase().includes(normalized) ||
-        item.symbol.toLowerCase().includes(normalized) ||
-        item.aliases.some((alias) => alias.toLowerCase().includes(normalized));
+        item.symbol.toLowerCase().includes(normalized);
       return sectorMatched && queryMatched;
     });
-  }, [query, sector]);
+  }, [items, query, sector]);
 
   return (
     <main className="page-shell">
       <section className="hero compact-hero">
         <p className="eyebrow">Stock Catalog</p>
-        <h1>{"\u80a1\u7968\u6e05\u55ae\u9801\u9762"}</h1>
+        <h1>{"\u5168\u90e8\u53f0\u80a1\u6e05\u55ae"}</h1>
         <p className="hero-copy">
           {
-            "\u96c6\u4e2d\u6aa2\u8996\u7ad9\u5167\u6536\u9304\u7684\u53f0\u80a1\u6e05\u55ae\uff0c\u53ef\u4ee5\u4f9d\u96fb\u5b50\u3001\u5851\u81a0\u3001\u91d1\u878d\u3001ETF \u7b49\u985e\u5225\u9032\u884c\u5207\u63db\u3002"
+            "\u4ee5 Fugle \u53f0\u80a1 ticker \u70ba\u4e3b\uff0c\u986f\u793a\u76ee\u524d\u53ef\u53d6\u5f97\u7684\u4e0a\u5e02\u3001\u4e0a\u6ac3\u80a1\u7968\u6e05\u55ae\uff0c\u53ef\u4f9d\u7522\u696d\u5206\u985e\u8207\u95dc\u9375\u5b57\u7be9\u9078\u3002"
           }
         </p>
       </section>

@@ -40,7 +40,7 @@ export interface StockSearchItem {
   market: "TW";
   sector: string;
   description: string;
-  source: "local" | "fugle";
+  source: "local" | "fugle" | "yahoo";
 }
 
 export interface StockAnalysisResult {
@@ -48,8 +48,8 @@ export interface StockAnalysisResult {
   name: string;
   market: "TW";
   sector: string;
-  currentPrice: number;
-  changePercent: number;
+  currentPrice: number | null;
+  changePercent: number | null;
   overallSignal: Signal;
   overallScore: number;
   yearPositionLabel: string;
@@ -58,4 +58,6 @@ export interface StockAnalysisResult {
   periods: PeriodAnalysis[];
   chartPoints: ChartPoint[];
   benchmark: MarketOverview;
+  newsSummary: string | null;
+  dataSources: string[];
 }
