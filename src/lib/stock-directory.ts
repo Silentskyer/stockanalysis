@@ -219,7 +219,7 @@ export const stockDirectory: StockDirectoryItem[] = [
 ];
 
 export function normalizeStockQuery(input: string) {
-  const query = input.trim().replace(/\.TW$/i, "");
+  const query = input.trim().replace(/\.(TW|TWO)$/i, "");
   if (!query) return "";
 
   const normalized = query.toLowerCase();

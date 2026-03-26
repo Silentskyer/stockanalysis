@@ -2,16 +2,21 @@ import { findDirectoryItem } from "@/lib/stock-directory";
 import { fetchFugleQuote, fetchFugleStockHistory } from "@/lib/fugle-marketdata";
 import { fetchGeminiNewsSummary } from "@/lib/gemini-news";
 import type { MarketOverview, PeriodAnalysis, PriceBar, Signal, StockAnalysisResult } from "@/lib/types";
-import { fetchYahooQuote, fetchYahooStockHistory } from "@/lib/yahoo-marketdata";
+import {
+  fetchYahooQuote,
+  fetchYahooQuoteWithFallback,
+  fetchYahooStockHistory,
+  fetchYahooStockHistoryWithFallback
+} from "@/lib/yahoo-marketdata";
 
 export async function analyzeStock(symbol: string): Promise<StockAnalysisResult> {
-  const yahooSymbol = `${symbol}.TW`;
+  const yahooSymbols = [`${symbol}.TW`, `${symbol}.TWO`];
   const [fugleHistory, fugleQuote, yahooHistory, yahooQuote, benchmarkFugleQuote, benchmarkYahooQuote] =
     await Promise.allSettled([
       fetchFugleStockHistory(symbol),
       fetchFugleQuote(symbol),
-      fetchYahooStockHistory(yahooSymbol),
-      fetchYahooQuote(yahooSymbol),
+      fetchYahooStockHistoryWithFallback(yahooSymbols),
+      fetchYahooQuoteWithFallback(yahooSymbols),
       fetchFugleQuote("0050"),
       fetchYahooQuote("0050.TW")
     ]);
@@ -77,7 +82,7 @@ function selectHistory(
 
   if (yahooHistory.status === "fulfilled" && yahooHistory.value.bars.length) {
     return {
-      symbol: yahooHistory.value.symbol.replace(/\.TW$/i, ""),
+      symbol: yahooHistory.value.symbol.replace(/\.(TW|TWO)$/i, ""),
       name: yahooHistory.value.name,
       bars: yahooHistory.value.bars
     };
@@ -109,7 +114,7 @@ function selectQuote(
 
   if (yahooQuote.status === "fulfilled") {
     return {
-      symbol: yahooQuote.value.symbol.replace(/\.TW$/i, ""),
+      symbol: yahooQuote.value.symbol.replace(/\.(TW|TWO)$/i, ""),
       name: yahooQuote.value.name,
       currentPrice: yahooQuote.value.currentPrice,
       changePercent: yahooQuote.value.changePercent
@@ -226,7 +231,7 @@ function buildMarketOverview(
 
   if (yahooQuote.status === "fulfilled") {
     return {
-      symbol: yahooQuote.value.symbol.replace(/\.TW$/i, ""),
+      symbol: yahooQuote.value.symbol.replace(/\.(TW|TWO)$/i, ""),
       name: yahooQuote.value.name,
       currentPrice: round(yahooQuote.value.currentPrice),
       changePercent: round(yahooQuote.value.changePercent),

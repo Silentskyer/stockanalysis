@@ -91,6 +91,20 @@ export async function fetchYahooStockHistory(symbol: string, range = "1y") {
   };
 }
 
+export async function fetchYahooStockHistoryWithFallback(symbols: string[], range = "1y") {
+  let lastError: unknown = null;
+
+  for (const symbol of symbols) {
+    try {
+      return await fetchYahooStockHistory(symbol, range);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Yahoo Finance \u7121\u6cd5\u53d6\u5f97\u8cc7\u6599");
+}
+
 export async function fetchYahooQuote(symbol: string) {
   const history = await fetchYahooStockHistory(symbol, "5d");
   const bars = history.bars;
@@ -104,6 +118,20 @@ export async function fetchYahooQuote(symbol: string) {
     currentPrice,
     changePercent
   };
+}
+
+export async function fetchYahooQuoteWithFallback(symbols: string[]) {
+  let lastError: unknown = null;
+
+  for (const symbol of symbols) {
+    try {
+      return await fetchYahooQuote(symbol);
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  throw lastError instanceof Error ? lastError : new Error("Yahoo Finance \u7121\u6cd5\u53d6\u5f97\u5831\u50f9");
 }
 
 export async function searchYahooStocks(query: string) {
@@ -131,10 +159,10 @@ export async function searchYahooStocks(query: string) {
 
   const data = (await response.json()) as YahooSearchResponse;
   return (data.quotes ?? [])
-    .filter((item) => item.symbol?.endsWith(".TW"))
+    .filter((item) => item.symbol?.endsWith(".TW") || item.symbol?.endsWith(".TWO"))
     .map<StockSearchItem>((item) => ({
-      symbol: (item.symbol ?? "").replace(/\.TW$/i, ""),
-      code: (item.symbol ?? "").replace(/\.TW$/i, ""),
+      symbol: (item.symbol ?? "").replace(/\.(TW|TWO)$/i, ""),
+      code: (item.symbol ?? "").replace(/\.(TW|TWO)$/i, ""),
       name: item.longname ?? item.shortname ?? item.symbol ?? "",
       market: "TW",
       sector: item.typeDisp ?? "\u5176\u4ed6",
