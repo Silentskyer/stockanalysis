@@ -110,8 +110,8 @@ export function AnalysisDashboard() {
     };
   }, [query, sector]);
 
-  const favoriteStocks = useMemo(() => {
-    const knownItems = [
+  const favoriteStocks = useMemo<StockSearchItem[]>(() => {
+    const knownItems: StockSearchItem[] = [
       ...stockDirectory,
       ...suggestions,
       ...(result
@@ -129,13 +129,15 @@ export function AnalysisDashboard() {
         : [])
     ];
 
-    return favorites.map((symbol) => {
+    return favorites.map<StockSearchItem>((symbol) => {
+      const fallbackMarket: StockSearchItem["market"] = symbol.endsWith(".TW") ? "TW" : "US";
+
       return (
         knownItems.find((item) => item.symbol === symbol) ?? {
           symbol,
           code: symbol.replace(".TW", ""),
           name: symbol,
-          market: symbol.endsWith(".TW") ? "TW" : "US",
+          market: fallbackMarket,
           sector: "\u5176\u4ed6",
           description: symbol,
           source: "yahoo" as const
